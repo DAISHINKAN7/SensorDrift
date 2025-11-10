@@ -1,0 +1,34 @@
+{
+  "name": "gas-detection-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@tensorflow/tfjs": "^4.15.0",
+    "chart.js": "^4.4.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "papaparse": "^5.4.1",
+    "react": "^18.2.0",
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "server": "node server.js",
+    "dev": "concurrently \"npm run server\" \"npm start\"",
+    "build": "react-scripts build"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

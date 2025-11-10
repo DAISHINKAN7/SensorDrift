@@ -1,0 +1,38 @@
+{
+  "real_only": {
+    "model_name": "Real Data Only Model",
+    "save_path": "/Users/kshitijnavale/Desktop/sensor data/model/model_real_only.keras",
+    "test_accuracy": 0.99568655643422,
+    "training_samples": 8902,
+    "test_samples": 2782,
+    "epochs_trained": 68,
+    "final_train_acc": 0.9933722615242004,
+    "final_val_acc": 0.9946091771125793,
+    "best_val_acc": 0.9955076575279236,
+    "timestamp": "2025-11-01T16:47:02.511650"
+  },
+  "synthetic_only": {
+    "model_name": "Synthetic Data Only Model",
+    "save_path": "/Users/kshitijnavale/Desktop/sensor data/model/model_synthetic_only.keras",
+    "test_accuracy": 0.996764917325665,
+    "training_samples": 8902,
+    "test_samples": 2782,
+    "epochs_trained": 64,
+    "final_train_acc": 0.9982026219367981,
+    "final_val_acc": 0.9968553185462952,
+    "best_val_acc": 0.9977537989616394,
+    "timestamp": "2025-11-01T16:48:13.495887"
+  },
+  "optimal_mix": {
+    "model_name": "Optimal Mix Model (50% Real + 50% Synthetic)",
+    "save_path": "/Users/kshitijnavale/Desktop/sensor data/model/model_optimal_50_50_mix.keras",
+    "test_accuracy": 0.997278553243789,
+    "training_samples": 36451,
+    "test_samples": 11391,
+    "epochs_trained": 100,
+    "final_train_acc": 0.9964061379432678,
+    "final_val_acc": 0.9986832141876221,
+    "best_val_acc": 0.9992318749427795,
+    "timestamp": "2025-11-01T16:56:03.564418"
+  }
+}

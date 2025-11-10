@@ -8,6 +8,8 @@ __pycache__/
 
 #Dataset
 Dataset/
+data/
+gas_sensor_models
 
 # Distribution / packaging
 .Python
@@ -88,3 +90,4 @@ dmypy.json
 .DS_Store
 Thumbs.db
 
+node_modules

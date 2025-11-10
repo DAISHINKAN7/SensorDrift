@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Real vs Synthetic Gas Monitoring</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .controls { text-align: center; margin: 20px 0; }
+        .container { display: flex; gap: 20px; }
+        .panel { flex: 1; border: 3px solid; padding: 20px; border-radius: 12px; background: white; }
+        .real { border-color: #3b82f6; }
+        .synthetic { border-color: #ef4444; }
+        .chart-container { height: 250px; margin: 15px 0; }
+        .current-reading { text-align: center; padding: 15px; margin: 10px 0; border-radius: 8px; font-size: 18px; font-weight: bold; }
+        .real .current-reading { background: #e0f2fe; color: #0277bd; }
+        .synthetic .current-reading { background: #ffebee; color: #c62828; }
+        .features { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0; }
+        .feature-box { padding: 8px; background: #f8f9fa; border-radius: 4px; text-align: center; font-size: 12px; }
+        button { padding: 12px 24px; margin: 0 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; }
+        .start-btn { background: #3b82f6; color: white; }
+        .stop-btn { background: #ef4444; color: white; }
+        .status { text-align: center; margin: 10px 0; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Real-Time Gas Monitoring: Real vs Synthetic Data Comparison</h1>
+        <div class="status" id="status">Ready to stream</div>
+    </div>
+    
+    <div class="controls">
+        <button class="start-btn" onclick="startStreaming()">Start Streaming</button>
+        <button class="stop-btn" onclick="stopStreaming()">Stop Streaming</button>
+    </div>
+    
+    <div class="container">
+        <div class="panel real">
+            <h2>🔵 Real Data Stream</h2>
+            <div class="current-reading" id="realReading">Waiting for data...</div>
+            <canvas id="realChart"></canvas>
+            <div class="features" id="realFeatures"></div>
+        </div>
+        
+        <div class="panel synthetic">
+            <h2>🔴 Synthetic Data Stream</h2>
+            <div class="current-reading" id="syntheticReading">Waiting for data...</div>
+            <canvas id="syntheticChart"></canvas>
+            <div class="features" id="syntheticFeatures"></div>
+        </div>
+    </div>
+
+    <script>
+        let streaming = false;
+        let updateInterval;
+        
+        const realChart = new Chart(document.getElementById('realChart'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Concentration (ppm)',
+                    data: [],
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { display: false },
+                    y: { beginAtZero: true, title: { display: true, text: 'Concentration (ppm)' } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+        
+        const syntheticChart = new Chart(document.getElementById('syntheticChart'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Concentration (ppm)',
+                    data: [],
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { display: false },
+                    y: { beginAtZero: true, title: { display: true, text: 'Concentration (ppm)' } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+        
+        function startStreaming() {
+            if (streaming) return;
+            
+            fetch('/start_stream')
+                .then(response => response.json())
+                .then(data => {
+                    streaming = true;
+                    document.getElementById('status').textContent = 'Streaming active...';
+                    updateInterval = setInterval(updateData, 500);
+                });
+        }
+        
+        function stopStreaming() {
+            if (!streaming) return;
+            
+            fetch('/stop_stream')
+                .then(response => response.json())
+                .then(data => {
+                    streaming = false;
+                    clearInterval(updateInterval);
+                    document.getElementById('status').textContent = 'Streaming stopped';
+                });
+        }
+        
+        function updateData() {
+            fetch('/get_data')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.real && data.synthetic) {
+                        updatePanel('real', data.real, realChart, 'realReading', 'realFeatures');
+                        updatePanel('synthetic', data.synthetic, syntheticChart, 'syntheticReading', 'syntheticFeatures');
+                    }
+                });
+        }
+        
+        function updatePanel(type, data, chart, readingId, featuresId) {
+            const timestamp = new Date().toLocaleTimeString();
+            
+            // Update current reading
+            document.getElementById(readingId).innerHTML = 
+                `${data.gas_type}<br>${data.concentration.toFixed(2)} ppm`;
+            
+            // Update chart
+            chart.data.labels.push(timestamp);
+            chart.data.datasets[0].data.push(data.concentration);
+            
+            if (chart.data.labels.length > 30) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+            }
+            
+            chart.update('none');
+            
+            // Update features
+            let featuresHtml = '';
+            data.features.forEach((feature, i) => {
+                featuresHtml += `<div class="feature-box">F${i+1}<br>${feature.toFixed(1)}</div>`;
+            });
+            document.getElementById(featuresId).innerHTML = featuresHtml;
+        }
+    </script>
+</body>
+</html>

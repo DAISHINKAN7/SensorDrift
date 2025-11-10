@@ -1,0 +1,7 @@
+gas,count,percentage,color,danger,threshold,risk_score
+Ammonia,167,16.7,#3b82f6,Toxic,25,2.8
+Acetaldehyde,166,16.6,#8b5cf6,Irritant,50,2.7
+Acetone,167,16.7,#ec4899,Flammable,750,2.8
+Ethanol,167,16.7,#10b981,Flammable,1000,2.8
+Ethylene,166,16.6,#f59e0b,Asphyxiant,100,2.7
+Toluene,167,16.7,#ef4444,Toxic,50,2.8

@@ -1,0 +1,7 @@
+gas,avg_concentration,threshold,risk_level,danger_type,samples
+Ammonia,18.5,25,LOW,Toxic,167
+Acetaldehyde,35.2,50,LOW,Irritant,166
+Acetone,520.8,750,LOW,Flammable,167
+Ethanol,680.4,1000,LOW,Flammable,167
+Ethylene,72.3,100,LOW,Asphyxiant,166
+Toluene,38.7,50,LOW,Toxic,167

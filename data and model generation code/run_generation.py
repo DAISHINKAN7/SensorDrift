@@ -4,6 +4,7 @@ import time
 import os
 import gc
 from gas_data_loader import load_gas_sensor_data
+from scipy.ndimage import gaussian_filter1d
 
 try:
     from tqdm import tqdm
@@ -44,42 +45,65 @@ class GasSensor1MGenerator:
 
     def generate_1M_samples(self, batch_size=10000, save_path='synthetic_gas_1M.csv'):
         total_samples = 1_000_000
-        samples_per_gas = total_samples // len(self.gas_types)
+        
+        # Calculate imbalanced synthetic counts based on original proportions
+        sorted_gases = sorted(self.gas_types)
+        original_counts = np.array([self.gas_stats[gas]['count'] for gas in sorted_gases])
+        total_original = original_counts.sum()
+        proportions = original_counts / total_original
+        synthetic_counts = np.round(proportions * total_samples).astype(int)
+        diff = total_samples - synthetic_counts.sum()
+        if diff != 0:
+            idx = np.argmax(original_counts)
+            synthetic_counts[idx] += diff
         
         print(f"\n{'='*60}")
-        print(f"GENERATING 1 MILLION SYNTHETIC SAMPLES")
+        print(f"GENERATING 1 MILLION SYNTHETIC SAMPLES WITH IMBALANCE AND NOISE")
         print(f"{'='*60}")
-        print(f"Samples per gas type: {samples_per_gas:,}")
         print(f"Batch size: {batch_size:,}")
         print(f"Memory optimization: Enabled")
+        
+        for i, gas in enumerate(sorted_gases):
+            print(f"  Planned samples for Gas {gas}: {synthetic_counts[i]:,}")
         
         start_time = time.time()
         temp_files = []
         
-        for gas_idx, gas in enumerate(sorted(self.gas_types)):
-            print(f"\nGenerating samples for Gas {gas} ({gas_idx + 1}/{len(self.gas_types)})...")
+        noise_level = 1.0  # Multiplier for Gaussian white noise std (1.0 makes it very noisy by doubling variance)
+        filter_sigma = 2.0  # Sigma for Gaussian filter (smoothing)
+        
+        for gas_idx, gas in enumerate(sorted_gases):
+            samples_for_gas = synthetic_counts[gas_idx]
+            print(f"\nGenerating {samples_for_gas:,} samples for Gas {gas} ({gas_idx + 1}/{len(sorted_gases)})...")
             stats = self.gas_stats[gas]
             
             # Add regularization to covariance matrix
             cov_matrix = stats['cov'] + 0.01 * np.eye(self.n_features)
             
-            remaining_samples = samples_per_gas
+            remaining_samples = samples_for_gas
             temp_file = f'temp_gas_{gas}_{int(time.time())}.csv'
             temp_files.append(temp_file)
             first_batch = True
             
             if TQDM_AVAILABLE:
-                pbar = tqdm(total=samples_per_gas, desc=f"Gas {gas}")
+                pbar = tqdm(total=samples_for_gas, desc=f"Gas {gas}")
             
             while remaining_samples > 0:
                 current_batch = min(batch_size, remaining_samples)
                 
-                # Generate batch
+                # Generate batch from multivariate normal
                 batch_data = np.random.multivariate_normal(
                     mean=stats['mean'],
                     cov=cov_matrix,
                     size=current_batch
                 )
+                
+                # Apply Gaussian filter (smoothing) to each feature vector
+                batch_data = gaussian_filter1d(batch_data, sigma=filter_sigma, axis=1)
+                
+                # Add Gaussian white noise to make data as noisy as possible
+                noise = np.random.normal(0, noise_level * stats['std'], batch_data.shape)
+                batch_data += noise
                 
                 # Create DataFrame
                 batch_df = pd.DataFrame(batch_data, columns=self.feature_columns)
@@ -101,7 +125,7 @@ class GasSensor1MGenerator:
             if TQDM_AVAILABLE:
                 pbar.close()
             
-            print(f"  Completed: {samples_per_gas:,} samples for Gas {gas}")
+            print(f"  Completed: {samples_for_gas:,} samples for Gas {gas}")
         
         print(f"\nCombining temporary files into final dataset...")
         

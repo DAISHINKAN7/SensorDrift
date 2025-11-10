@@ -1,0 +1,1591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gas Monitoring Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            color: #60a5fa;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #93c5fd;
+            font-size: 1.2em;
+        }
+        
+        .controls {
+            background: rgba(30, 41, 59, 0.7);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        label {
+            font-weight: 600;
+            color: #93c5fd;
+            font-size: 0.95em;
+        }
+        
+        select, input[type="range"] {
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid #475569;
+            background: #1e293b;
+            color: #e2e8f0;
+            font-size: 1em;
+            cursor: pointer;
+        }
+        
+        select:focus, input:focus {
+            outline: none;
+            border-color: #60a5fa;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+        }
+        
+        .range-value {
+            text-align: center;
+            color: #60a5fa;
+            font-weight: bold;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            padding: 15px 30px;
+            background: rgba(30, 41, 59, 0.5);
+            border: 2px solid #475569;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .tab:hover {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: #60a5fa;
+        }
+        
+        .tab.active {
+            background: #60a5fa;
+            color: #0f172a;
+            border-color: #60a5fa;
+        }
+        
+        .tab-content {
+            display: none;
+            background: rgba(30, 41, 59, 0.5);
+            padding: 30px;
+            border-radius: 15px;
+            animation: fadeIn 0.3s;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid #475569;
+            text-align: center;
+        }
+        
+        .metric-label {
+            color: #94a3b8;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        
+        .metric-value {
+            color: #60a5fa;
+            font-size: 2em;
+            font-weight: bold;
+        }
+        
+        .chart-container {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .info-box {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid #60a5fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .success { border-left-color: #10b981; background: rgba(16, 185, 129, 0.1); }
+        .warning { border-left-color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
+        .error { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #475569;
+        }
+        
+        th {
+            background: rgba(59, 130, 246, 0.2);
+            color: #93c5fd;
+            font-weight: 600;
+        }
+        
+        tr:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+        
+        .spinner {
+            border: 4px solid #1e293b;
+            border-top: 4px solid #60a5fa;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        button {
+            background: #60a5fa;
+            color: #0f172a;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background: #3b82f6;
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            background: #475569;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .alert-info {
+            background: rgba(59, 130, 246, 0.2);
+            border: 2px solid #60a5fa;
+            color: #93c5fd;
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.2);
+            border: 2px solid #f59e0b;
+            color: #fbbf24;
+        }
+        
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Gas Monitoring Dashboard</h1>
+            <p class="subtitle">Real-time AI-powered Gas Detection & Forecasting</p>
+        </header>
+
+        <!-- Model Status Alert -->
+        <div id="modelStatusAlert" class="alert alert-info" style="display: none;">
+            <p style="text-align: center;">
+                🤖 Model
+            </p>
+        </div>
+
+        <!-- Loading Alert -->
+        <div id="loadingAlert" class="alert alert-info" style="display: none;">
+            <div class="spinner"></div>
+            <p style="text-align: center; margin-top: 10px;" id="loadingMessage">Loading...</p>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>Data Source</label>
+                <select id="dataSource" onchange="handleDataSourceChange()">
+                    <option value="real">Real Sensor Data</option>
+                    <option value="synthetic">Synthetic Sensor Data</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label>Model Information</label>
+                <div style="padding: 10px; background: rgba(16, 185, 129, 0.2); border-radius: 8px; border: 2px solid #10b981;">
+                    <strong>model</strong><br>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label>Sample Index: <span id="sampleValue" class="range-value">0</span></label>
+                <input type="range" id="sampleIdx" min="0" max="999" value="0" oninput="handleSampleChange()">
+            </div>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('detection')">🔍 Real-time Detection</div>
+            <div class="tab" onclick="switchTab('forecast')">🔮 Forecasting</div>
+            <div class="tab" onclick="switchTab('analytics')">📊 Enhanced Analytics</div>
+        </div>
+        
+        <!-- TAB 1: DETECTION -->
+        <div id="detection-content" class="tab-content active">
+            <h2 style="margin-bottom: 20px;">Real-time Gas Detection</h2>
+            
+            <div style="text-align: center; margin-bottom: 20px;">
+                <button onclick="updatePrediction()" style="font-size: 1.1em; padding: 12px 40px;">
+                    🔍 Make Prediction
+                </button>
+            </div>
+            
+            <!-- All Gas Concentrations -->
+            <div id="allGasesDisplay" style="display: none; margin-bottom: 30px;">
+                <h3 style="margin-bottom: 15px;">All Gas Concentrations</h3>
+                <div class="metrics" id="allGasMetrics"></div>
+            </div>
+            
+            <div class="metrics">
+                <div class="metric-card">
+                    <div class="metric-label">Detected Gas</div>
+                    <div class="metric-value" id="detectedGas">-</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Confidence</div>
+                    <div class="metric-value" id="confidence">-</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">True Gas</div>
+                    <div class="metric-value" id="trueGas">-</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Status</div>
+                    <div class="metric-value" id="status">-</div>
+                </div>
+            </div>
+            
+            <div class="grid-2">
+                <div class="chart-container">
+                    <div id="probabilityChart"></div>
+                </div>
+                <div>
+                    <div class="info-box">
+                        <h3 style="margin-bottom: 10px;">Safety Information</h3>
+                        <div id="safetyDetails">Load models and select a sample to see prediction...</div>
+                    </div>
+                    <div class="info-box">
+                        <h3 style="margin-bottom: 10px;">Raw Sensor Values (First 8)</h3>
+                        <table>
+                            <thead>
+                                <tr><th>Sensor</th><th>Value</th></tr>
+                            </thead>
+                            <tbody id="sensorData">
+                                <tr><td colspan="2" style="text-align: center;">No data</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+
+        
+        <!-- TAB 3: FORECAST -->
+        <div id="forecast-content" class="tab-content">
+            <h2 style="margin-bottom: 20px;">Continuous Gas Concentration Monitoring</h2>
+            
+            <div class="info-box">
+                Real-time continuous forecasting - Updates every 2 seconds
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <label>Select Gas to Monitor</label>
+                    <select id="forecastGas" onchange="restartContinuousForecast()">
+                        {% for gas in gas_info.values() %}
+                        <option>{{ gas.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Monitoring Status</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button id="startForecastBtn" onclick="startContinuousForecast()" style="flex: 1;">
+                            ▶️ Start Monitoring
+                        </button>
+                        <button id="stopForecastBtn" onclick="stopContinuousForecast()" style="flex: 1; background: #ef4444;">
+                            ⏹️ Stop
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <div id="forecastChart"></div>
+            </div>
+            
+            <div class="metrics" id="forecastMetrics"></div>
+        </div>
+        
+        <!-- TAB 3: ANALYTICS -->
+        <div id="analytics-content" class="tab-content">
+            <h2 style="margin-bottom: 20px;">🚀 Enhanced Data Analytics & AI Insights</h2>
+            
+            <!-- Model Information -->
+            <div class="info-box success">
+                <h3>🤖 Active Model Information</h3>
+                <div id="modelInfo">
+                    <p><strong>Model:</strong> Optimal Mix Model (99.91% accuracy)</p>
+                    <p><strong>Path:</strong> /Users/kshitijnavale/Desktop/sensor data/model/model_optimal_50_50_mix.keras</p>
+                    <p><strong>Description:</strong> Best performing model using 50-50 mix of real and synthetic data</p>
+                </div>
+            </div>
+            
+            <!-- Key Performance Indicators -->
+            <h3 style="margin: 20px 0 15px 0;">📊 Key Performance Indicators</h3>
+            <div class="metrics" id="kpiMetrics"></div>
+            
+            <!-- Safety Analysis -->
+            <h3 style="margin: 30px 0 15px 0;">🛡️ Gas Safety Analysis</h3>
+            <div class="chart-container">
+                <div id="safetyChart"></div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Gas</th>
+                        <th>Avg Concentration</th>
+                        <th>Threshold (ppm)</th>
+                        <th>Risk Level</th>
+                        <th>Danger Type</th>
+                        <th>Samples</th>
+                    </tr>
+                </thead>
+                <tbody id="safetyData">
+                    <tr><td colspan="6" style="text-align: center;">Loading...</td></tr>
+                </tbody>
+            </table>
+            
+            <!-- Sensor Performance Analysis -->
+            <h3 style="margin: 30px 0 15px 0;">🎯 Sensor Performance Analysis</h3>
+            <div class="chart-container">
+                <div id="sensorPerformanceChart"></div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Sensor</th>
+                        <th>Mean Value</th>
+                        <th>Std Deviation</th>
+                        <th>Performance Score</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="sensorPerformanceData">
+                    <tr><td colspan="5" style="text-align: center;">Loading...</td></tr>
+                </tbody>
+            </table>
+            
+            <!-- Distribution Chart -->
+            <h3 style="margin: 30px 0 15px 0;">🎯 Gas Detection Distribution</h3>
+            <div class="chart-container">
+                <div id="distributionChart"></div>
+            </div>
+            
+            <!-- Advanced Feature Analysis -->
+            <h3 style="margin: 30px 0 15px 0;">📈 Advanced Feature Statistics</h3>
+            <div class="chart-container">
+                <div id="boxPlotChart"></div>
+            </div>
+            
+            <!-- Correlation Heatmap -->
+            <h3 style="margin: 30px 0 15px 0;">🔥 Feature Correlation Heatmap</h3>
+            <div class="chart-container">
+                <div id="correlationChart"></div>
+            </div>
+            
+            <!-- Time Series Trend -->
+            <h3 style="margin: 30px 0 15px 0;">📈 Detection Trends Over Time</h3>
+            <div class="chart-container">
+                <div id="trendChart"></div>
+            </div>
+            
+            <!-- Statistical Summary -->
+            <h3 style="margin: 30px 0 15px 0;">📑 Enhanced Statistical Summary</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Gas</th>
+                        <th>Count</th>
+                        <th>Percentage</th>
+                        <th>Danger Level</th>
+                        <th>Threshold (ppm)</th>
+                        <th>Avg Sensor Reading</th>
+                        <th>Risk Score</th>
+                    </tr>
+                </thead>
+                <tbody id="statsData">
+                    <tr><td colspan="7" style="text-align: center;">Loading...</td></tr>
+                </tbody>
+            </table>
+            
+            <!-- Feature Statistics -->
+            <h3 style="margin: 30px 0 15px 0;">🎲 Detailed Feature Statistics (First 8 Sensors)</h3>
+            <div class="chart-container">
+                <div id="featureStatsChart"></div>
+            </div>
+            
+            <!-- Model Performance Metrics -->
+            <h3 style="margin: 30px 0 15px 0;">🏆 Model Performance Analysis</h3>
+            <div class="metrics">
+                <div class="metric-card">
+                    <div class="metric-label">Current Model</div>
+                    <div class="metric-value">99.91%</div>
+                    <div class="metric-label">Optimal Mix</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Data Strategy</div>
+                    <div class="metric-value">50-50</div>
+                    <div class="metric-label">Real-Synthetic Mix</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Model Type</div>
+                    <div class="metric-value">Keras</div>
+                    <div class="metric-label">Deep Learning</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Status</div>
+                    <div class="metric-value">🟢 Active</div>
+                    <div class="metric-label">Production Ready</div>
+                </div>
+            </div>
+            
+            <!-- Data Quality Metrics -->
+            <h3 style="margin: 30px 0 15px 0;">✅ Data Quality Assessment</h3>
+            <div class="metrics" id="dataQualityMetrics"></div>
+            
+            <!-- Raw Data Preview -->
+            <h3 style="margin: 30px 0 15px 0;">🔍 Enhanced Data Preview</h3>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead id="previewHeader"></thead>
+                    <tbody id="previewData">
+                        <tr><td style="text-align: center;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Advanced Analytics -->
+            <h3 style="margin: 30px 0 15px 0;">🧠 AI-Powered Insights</h3>
+            <div class="grid-2">
+                <div class="info-box">
+                    <h4>🎯 Detection Accuracy</h4>
+                    <p>The optimal mix model achieves 99.91% accuracy by combining the strengths of both real and synthetic data, providing robust gas detection across all 6 gas types.</p>
+                </div>
+                <div class="info-box">
+                    <h4>📊 Data Balance</h4>
+                    <p>Balanced dataset ensures fair representation of all gas types, preventing model bias and improving generalization to real-world scenarios.</p>
+                </div>
+                <div class="info-box">
+                    <h4>🔬 Sensor Reliability</h4>
+                    <p>Multi-sensor approach with 8 primary sensors provides redundancy and cross-validation for enhanced detection reliability.</p>
+                </div>
+                <div class="info-box">
+                    <h4>⚡ Real-time Performance</h4>
+                    <p>Optimized model architecture enables real-time gas detection with sub-second response times for critical safety applications.</p>
+                </div>
+            </div>
+            
+            <!-- Export Options -->
+            <h3 style="margin: 30px 0 15px 0;">💾 Export & Reporting</h3>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <button onclick="exportAnalytics('csv')" style="flex: 1; min-width: 200px;">
+                    📄 Export Analytics to CSV
+                </button>
+                <button onclick="exportAnalytics('json')" style="flex: 1; min-width: 200px;">
+                    📋 Export Data to JSON
+                </button>
+                <button onclick="generateReport()" style="flex: 1; min-width: 200px;">
+                    📊 Generate Comprehensive Report
+                </button>
+                <button onclick="exportModelInfo()" style="flex: 1; min-width: 200px;">
+                    🤖 Export Model Information
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentTab = 'detection';
+        let modelsLoaded = true; // Always ready
+        
+        // Continuous forecasting variables
+        let isForecastRunning = false;
+        let continuousForecastInterval = null;
+        
+        // Monitoring data storage
+        let monitoringData = {
+            sessionId: null,
+            startTime: null,
+            endTime: null,
+            gasName: null,
+            dataPoints: [],
+            events: [],
+            summary: {}
+        };
+        let isLoading = false;
+        let continuousForecastInterval = null;
+        let isForecastRunning = false;
+        
+        function hideLoading() {
+            document.getElementById('loadingAlert').style.display = 'none';
+            isLoading = false;
+        }
+        
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + '-content').classList.add('active');
+            
+            if (tabName === 'forecast') updateForecast();
+            else if (tabName === 'analytics') updateAnalytics();
+        }
+        
+        function handleSampleChange() {
+            const value = document.getElementById('sampleIdx').value;
+            document.getElementById('sampleValue').textContent = value;
+            // Auto-predict when slider changes
+            if (currentTab === 'detection' && modelsLoaded) {
+                updatePrediction();
+            }
+        }
+        
+        function handleDataSourceChange() {
+            updateDatasetInfo();
+            if (currentTab === 'analytics') updateAnalytics();
+        }
+        
+        function handleForecastChange() {
+            document.getElementById('forecastHoursValue').textContent = document.getElementById('forecastHours').value;
+        }
+        
+        async function updateDatasetInfo() {
+            try {
+                const response = await fetch('/api/dataset_info', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        data_source: document.getElementById('dataSource').value
+                    })
+                });
+                
+                const data = await response.json();
+                document.getElementById('sampleIdx').max = data.max_index;
+            } catch (error) {
+                console.error('Error updating dataset info:', error);
+            }
+        }
+        
+        async function updatePrediction() {
+            if (isLoading) return;
+            
+            document.getElementById('loadingAlert').style.display = 'block';
+            document.getElementById('loadingMessage').textContent = 'Making prediction...';
+            isLoading = true;
+            
+            try {
+                const response = await fetch('/api/predict', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        sample_idx: parseInt(document.getElementById('sampleIdx').value),
+                        data_source: document.getElementById('dataSource').value
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    hideLoading();
+                    return;
+                }
+                
+                document.getElementById('detectedGas').textContent = data.predicted_gas;
+                document.getElementById('confidence').textContent = (data.confidence * 100).toFixed(2) + '%';
+                document.getElementById('trueGas').textContent = data.true_gas;
+                document.getElementById('status').textContent = data.match ? '✅ Match' : '❌ Mismatch';
+                
+                // Update safety info with hazard status
+                document.getElementById('safetyDetails').innerHTML = `
+                    <p><strong>Gas:</strong> ${data.gas_info.name}</p>
+                    <p><strong>Hazard:</strong> ${data.gas_info.danger}</p>
+                    <p><strong>Concentration:</strong> ${data.concentration.toFixed(2)} ppm</p>
+                    <p><strong>Threshold:</strong> ${data.gas_info.threshold} ppm</p>
+                    <p><strong>Status:</strong> ${data.hazard_status}</p>
+                `;
+                
+                // Display all gases
+                if (data.all_gases) {
+                    document.getElementById('allGasesDisplay').style.display = 'block';
+                    let allGasHTML = '';
+                    data.all_gases.forEach(gas => {
+                        const status = gas.concentration > gas.threshold ? '🔴' : 
+                                     gas.concentration > gas.threshold * 0.8 ? '🟡' : '🟢';
+                        allGasHTML += `
+                            <div class="metric-card">
+                                <div class="metric-label">${status} ${gas.name}</div>
+                                <div class="metric-value" style="font-size: 1.3em;">${gas.concentration.toFixed(1)} ppm</div>
+                                <div class="metric-label">Prob: ${gas.probability.toFixed(1)}%</div>
+                                <div class="metric-label">Limit: ${gas.threshold} ppm</div>
+                            </div>
+                        `;
+                    });
+                    document.getElementById('allGasMetrics').innerHTML = allGasHTML;
+                }
+                
+                let sensorHTML = '';
+                for (let i = 0; i < 8; i++) {
+                    sensorHTML += `<tr><td>S${i+1}</td><td>${data.sensor_values[i].toFixed(2)}</td></tr>`;
+                }
+                document.getElementById('sensorData').innerHTML = sensorHTML;
+                
+                const gasNames = ['Ammonia', 'Acetaldehyde', 'Acetone', 'Ethanol', 'Ethylene', 'Toluene'];
+                const colors = ['#3b82f6', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#ef4444'];
+                const barColors = gasNames.map((name, i) => 
+                    i === data.predicted_class ? colors[i] : '#94a3b8'
+                );
+                
+                Plotly.newPlot('probabilityChart', [{
+                    x: gasNames,
+                    y: data.probabilities.map(p => p * 100),
+                    type: 'bar',
+                    marker: {color: barColors},
+                    text: data.probabilities.map(p => (p*100).toFixed(2) + '%'),
+                    textposition: 'auto'
+                }], {
+                    title: 'Prediction Probabilities',
+                    xaxis: {title: 'Gas Type'},
+                    yaxis: {title: 'Probability (%)'},
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: {color: '#e2e8f0'}
+                });
+                
+            } catch (error) {
+                alert('Error: ' + error);
+            } finally {
+                hideLoading();
+            }
+        }
+        
+
+        
+        async function updateForecast() {
+            try {
+                const hours = document.getElementById('forecastHours').value;
+                
+                const response = await fetch('/api/forecast', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        gas_name: document.getElementById('forecastGas').value,
+                        forecast_hours: parseInt(hours)
+                    })
+                });
+                
+                const data = await response.json();
+                
+                const histTime = Array.from({length: data.historical.length}, (_, i) => i - data.historical.length);
+                const foreTime = Array.from({length: data.forecast.length}, (_, i) => i);
+                
+                Plotly.newPlot('forecastChart', [
+                    {
+                        x: histTime,
+                        y: data.historical,
+                        mode: 'lines+markers',
+                        name: 'Historical',
+                        line: {color: '#3b82f6', width: 2}
+                    },
+                    {
+                        x: foreTime,
+                        y: data.forecast,
+                        mode: 'lines+markers',
+                        name: 'Forecast',
+                        line: {color: '#ef4444', width: 2, dash: 'dash'}
+                    }
+                ], {
+                    title: `${data.gas_name} Concentration Forecast`,
+                    xaxis: {title: 'Time (relative)'},
+                    yaxis: {title: 'Concentration (ppm)'},
+                    shapes: [{
+                        type: 'line',
+                        x0: Math.min(...histTime),
+                        x1: Math.max(...foreTime),
+                        y0: data.threshold,
+                        y1: data.threshold,
+                        line: {color: 'orange', width: 2, dash: 'dot'}
+                    }],
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: {color: '#e2e8f0'}
+                });
+                
+                document.getElementById('forecastMetrics').innerHTML = `
+                    <div class="metric-card">
+                        <div class="metric-label">Average</div>
+                        <div class="metric-value">${data.avg_forecast.toFixed(1)} ppm</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Maximum</div>
+                        <div class="metric-value">${data.max_forecast.toFixed(1)} ppm</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Minimum</div>
+                        <div class="metric-value">${data.min_forecast.toFixed(1)} ppm</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Exceedances</div>
+                        <div class="metric-value">${data.exceedances}/${data.forecast.length}</div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Forecast error:', error);
+            }
+        }
+        
+        async function updateAnalytics() {
+            try {
+                const response = await fetch('/api/analytics', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        data_source: document.getElementById('dataSource').value
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Update model info
+                if (data.model_info) {
+                    document.getElementById('modelInfo').innerHTML = `
+                        <p><strong>Model:</strong> ${data.model_info.name}</p>
+                        <p><strong>Accuracy:</strong> ${data.model_info.accuracy}%</p>
+                        <p><strong>Path:</strong> ${data.model_info.path}</p>
+                        <p><strong>Description:</strong> ${data.model_info.description}</p>
+                    `;
+                }
+                
+                // Enhanced KPIs
+                document.getElementById('kpiMetrics').innerHTML = `
+                    <div class="metric-card">
+                        <div class="metric-label">Total Samples</div>
+                        <div class="metric-value">${data.kpis.total_samples.toLocaleString()}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Model Accuracy</div>
+                        <div class="metric-value">${data.kpis.model_accuracy}%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Most Common</div>
+                        <div class="metric-value" style="font-size: 1.3em;">${data.kpis.most_common_gas}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Least Common</div>
+                        <div class="metric-value" style="font-size: 1.3em;">${data.kpis.least_common_gas}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Balance Score</div>
+                        <div class="metric-value">${data.kpis.data_balance_score}%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Sensor Diversity</div>
+                        <div class="metric-value">${data.kpis.sensor_diversity}</div>
+                    </div>
+                `;
+                
+                // Safety Analysis Table
+                if (data.safety_analysis) {
+                    let safetyHTML = '';
+                    data.safety_analysis.forEach(s => {
+                        const riskColor = s.risk_level === 'LOW' ? '#10b981' : 
+                                        s.risk_level === 'MEDIUM' ? '#f59e0b' : '#ef4444';
+                        safetyHTML += `
+                            <tr>
+                                <td>${s.gas}</td>
+                                <td>${s.avg_concentration} ppm</td>
+                                <td>${s.threshold} ppm</td>
+                                <td style="color: ${riskColor}; font-weight: bold;">${s.risk_level}</td>
+                                <td>${s.danger_type}</td>
+                                <td>${s.samples}</td>
+                            </tr>
+                        `;
+                    });
+                    document.getElementById('safetyData').innerHTML = safetyHTML;
+                    
+                    // Safety Chart
+                    Plotly.newPlot('safetyChart', [{
+                        x: data.safety_analysis.map(s => s.gas),
+                        y: data.safety_analysis.map(s => s.avg_concentration),
+                        type: 'bar',
+                        marker: {
+                            color: data.safety_analysis.map(s => 
+                                s.risk_level === 'LOW' ? '#10b981' : 
+                                s.risk_level === 'MEDIUM' ? '#f59e0b' : '#ef4444'
+                            )
+                        },
+                        text: data.safety_analysis.map(s => `${s.avg_concentration} ppm<br>${s.risk_level}`),
+                        textposition: 'auto'
+                    }], {
+                        title: 'Gas Concentration vs Safety Thresholds',
+                        xaxis: {title: 'Gas Type'},
+                        yaxis: {title: 'Concentration (ppm)'},
+                        paper_bgcolor: 'rgba(0,0,0,0)',
+                        plot_bgcolor: 'rgba(0,0,0,0)',
+                        font: {color: '#e2e8f0'}
+                    });
+                }
+                
+                // Sensor Performance
+                if (data.sensor_performance) {
+                    let sensorHTML = '';
+                    data.sensor_performance.forEach(s => {
+                        const statusColor = s.status === 'EXCELLENT' ? '#10b981' : 
+                                          s.status === 'GOOD' ? '#f59e0b' : '#ef4444';
+                        sensorHTML += `
+                            <tr>
+                                <td>${s.sensor}</td>
+                                <td>${s.mean}</td>
+                                <td>${s.std}</td>
+                                <td>${s.performance_score}%</td>
+                                <td style="color: ${statusColor}; font-weight: bold;">${s.status}</td>
+                            </tr>
+                        `;
+                    });
+                    document.getElementById('sensorPerformanceData').innerHTML = sensorHTML;
+                    
+                    // Sensor Performance Chart
+                    Plotly.newPlot('sensorPerformanceChart', [{
+                        x: data.sensor_performance.map(s => s.sensor),
+                        y: data.sensor_performance.map(s => s.performance_score),
+                        type: 'bar',
+                        marker: {
+                            color: data.sensor_performance.map(s => 
+                                s.status === 'EXCELLENT' ? '#10b981' : 
+                                s.status === 'GOOD' ? '#f59e0b' : '#ef4444'
+                            )
+                        },
+                        text: data.sensor_performance.map(s => `${s.performance_score}%<br>${s.status}`),
+                        textposition: 'auto'
+                    }], {
+                        title: 'Sensor Performance Scores',
+                        xaxis: {title: 'Sensor'},
+                        yaxis: {title: 'Performance Score (%)', range: [0, 100]},
+                        paper_bgcolor: 'rgba(0,0,0,0)',
+                        plot_bgcolor: 'rgba(0,0,0,0)',
+                        font: {color: '#e2e8f0'}
+                    });
+                }
+                
+                // Distribution chart
+                Plotly.newPlot('distributionChart', [{
+                    x: data.distribution.map(d => d.gas),
+                    y: data.distribution.map(d => d.count),
+                    type: 'bar',
+                    marker: {color: data.distribution.map(d => d.color)},
+                    text: data.distribution.map(d => `${d.count} (${d.percentage}%)`),
+                    textposition: 'auto'
+                }], {
+                    title: 'Gas Detection Distribution',
+                    xaxis: {title: 'Gas Type'},
+                    yaxis: {title: 'Count'},
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: {color: '#e2e8f0'}
+                });
+                
+                // Box plot for feature analysis
+                const boxTraces = data.feature_stats.sensors.map((sensor, i) => ({
+                    y: [data.feature_stats.mins[i], data.feature_stats.q25[i], 
+                        data.feature_stats.medians[i], data.feature_stats.q75[i], 
+                        data.feature_stats.maxs[i]],
+                    type: 'box',
+                    name: sensor,
+                    boxpoints: false
+                }));
+                
+                Plotly.newPlot('boxPlotChart', boxTraces, {
+                    title: 'Feature Distribution Analysis (Box Plot)',
+                    xaxis: {title: 'Sensors'},
+                    yaxis: {title: 'Value Range'},
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: {color: '#e2e8f0'}
+                });
+                
+                // Correlation heatmap
+                const sensorLabels = data.feature_stats.sensors;
+                Plotly.newPlot('correlationChart', [{
+                    z: data.correlation_matrix,
+                    x: sensorLabels,
+                    y: sensorLabels,
+                    type: 'heatmap',
+                    colorscale: 'Viridis',
+                    showscale: true
+                }], {
+                    title: 'Sensor Feature Correlation Matrix',
+                    xaxis: {title: 'Sensors'},
+                    yaxis: {title: 'Sensors'},
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: {color: '#e2e8f0'}
+                });
+                
+                // Trend chart
+                const gasNames = [...new Set(data.trend_data.map(d => d.gas))];
+                const traces = gasNames.map(gas => {
+                    const gasData = data.trend_data.filter(d => d.gas === gas);
+                    return {
+                        x: gasData.map(d => d.time_point),
+                        y: gasData.map(d => d.count),
+                        mode: 'lines+markers',
+                        name: gas,
+                        line: {width: 2},
+                        marker: {size: 6}
+                    };
+                });
+                
+                Plotly.newPlot('trendChart', traces, {
+                    title: 'Detection Trends Over Sample Batches',
+                    xaxis: {title: 'Batch Number'},
+                    yaxis: {title: 'Detection Count'},
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: {color: '#e2e8f0'}
+                });
+                
+                // Feature statistics bar chart
+                Plotly.newPlot('featureStatsChart', [{
+                    y: data.feature_stats.means,
+                    x: data.feature_stats.sensors,
+                    type: 'bar',
+                    name: 'Mean Values',
+                    error_y: {
+                        type: 'data',
+                        array: data.feature_stats.stds,
+                        visible: true
+                    },
+                    marker: {color: '#3b82f6'}
+                }], {
+                    title: 'Average Sensor Readings with Standard Deviation',
+                    xaxis: {title: 'Sensor'},
+                    yaxis: {title: 'Value'},
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: {color: '#e2e8f0'}
+                });
+                
+                // Enhanced stats table
+                let statsHTML = '';
+                data.distribution.forEach(d => {
+                    statsHTML += `
+                        <tr>
+                            <td>${d.gas}</td>
+                            <td>${d.count}</td>
+                            <td>${d.percentage}%</td>
+                            <td>${d.danger}</td>
+                            <td>${d.threshold}</td>
+                            <td>${d.avg_sensor_reading}</td>
+                            <td>${d.risk_score || 'N/A'}</td>
+                        </tr>
+                    `;
+                });
+                document.getElementById('statsData').innerHTML = statsHTML;
+                
+                // Enhanced data quality metrics
+                document.getElementById('dataQualityMetrics').innerHTML = `
+                    <div class="metric-card">
+                        <div class="metric-label">Completeness</div>
+                        <div class="metric-value">${data.data_quality.completeness}%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Uniqueness</div>
+                        <div class="metric-value">${data.data_quality.uniqueness}%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Consistency</div>
+                        <div class="metric-value">${data.data_quality.consistency}%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Validity</div>
+                        <div class="metric-value">${data.data_quality.validity}%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Outliers</div>
+                        <div class="metric-value">${data.data_quality.outlier_percentage}%</div>
+                    </div>
+                `;
+                
+                // Enhanced preview table
+                if (data.preview.length > 0) {
+                    const headers = Object.keys(data.preview[0]);
+                    document.getElementById('previewHeader').innerHTML = 
+                        '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+                    
+                    let previewHTML = '';
+                    data.preview.forEach(row => {
+                        previewHTML += '<tr>' + headers.map(h => `<td>${row[h]}</td>`).join('') + '</tr>';
+                    });
+                    document.getElementById('previewData').innerHTML = previewHTML;
+                }
+            } catch (error) {
+                console.error('Analytics error:', error);
+            }
+        }
+        
+        function exportAnalytics(format) {
+            const loadingMsg = document.createElement('div');
+            loadingMsg.innerHTML = `<div style="color: #60a5fa; padding: 10px;">Exporting ${format.toUpperCase()}... Please wait</div>`;
+            document.body.appendChild(loadingMsg);
+            
+            const endpoint = format === 'csv' ? '/api/export_csv' : '/api/export_json';
+            
+            fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    data_source: document.getElementById('dataSource').value
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.body.removeChild(loadingMsg);
+                
+                if (data.success) {
+                    if (format === 'csv') {
+                        // Download multiple CSV files
+                        data.csv_files.forEach(filename => {
+                            const link = document.createElement('a');
+                            link.href = `/download/${filename}`;
+                            link.download = filename;
+                            link.click();
+                        });
+                        alert(`Successfully exported ${data.csv_files.length} CSV files!`);
+                    } else {
+                        // Download JSON file
+                        const link = document.createElement('a');
+                        link.href = `/download/${data.json_file}`;
+                        link.download = data.json_file;
+                        link.click();
+                        alert('JSON export completed successfully!');
+                    }
+                } else {
+                    alert(`Export failed: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                document.body.removeChild(loadingMsg);
+                console.error('Export error:', error);
+                alert(`Export failed: ${error.message}`);
+            });
+        }
+        
+        function generateReport() {
+            const loadingMsg = document.createElement('div');
+            loadingMsg.innerHTML = `<div style="color: #60a5fa; padding: 10px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(30, 41, 59, 0.9); border-radius: 10px; z-index: 1000;">Generating PDF Report... Please wait</div>`;
+            document.body.appendChild(loadingMsg);
+            
+            fetch('/api/generate_pdf_report', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    data_source: document.getElementById('dataSource').value
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.body.removeChild(loadingMsg);
+                
+                if (data.success) {
+                    // Automatically download the PDF
+                    const link = document.createElement('a');
+                    link.href = `/download/${data.filename}`;
+                    link.download = data.filename;
+                    link.click();
+                    
+                    alert('PDF report generated and downloaded successfully!');
+                } else {
+                    alert(`PDF generation failed: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                document.body.removeChild(loadingMsg);
+                console.error('PDF generation error:', error);
+                alert(`PDF generation failed: ${error.message}`);
+            });
+        }
+        
+        function exportModelInfo() {
+            const modelInfo = {
+                name: 'Optimal Mix Model',
+                accuracy: 99.91,
+                path: '/Users/kshitijnavale/Desktop/sensor data/model/model_optimal_50_50_mix.keras',
+                description: 'Best performing model using 50-50 mix of real and synthetic data',
+                timestamp: new Date().toISOString()
+            };
+            
+            const dataStr = JSON.stringify(modelInfo, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'model_info.json';
+            link.click();
+        }
+        
+        // Initialize on page load
+        window.addEventListener('load', function() {
+            console.log('Dashboard loaded - Model ready for predictions');
+            updateDatasetInfo();
+            updateAnalytics();
+        });
+        
+        // Continuous Forecasting Functions
+        function startContinuousForecast() {
+            if (isForecastRunning) {
+                alert('Forecasting is already running');
+                return;
+            }
+            
+            // Initialize monitoring session
+            monitoringData = {
+                sessionId: 'session_' + Date.now(),
+                startTime: new Date().toISOString(),
+                endTime: null,
+                gasName: document.getElementById('forecastGas').value,
+                dataPoints: [],
+                events: [],
+                summary: {}
+            };
+            
+            monitoringData.events.push({
+                timestamp: new Date().toISOString(),
+                event: 'monitoring_started',
+                gas: monitoringData.gasName
+            });
+            
+            isForecastRunning = true;
+            document.getElementById('startForecastBtn').disabled = true;
+            document.getElementById('startForecastBtn').textContent = '▶️ Running...';
+            document.getElementById('stopForecastBtn').disabled = false;
+            
+            // Hide download button if exists
+            const downloadBtn = document.getElementById('downloadMonitoringBtn');
+            if (downloadBtn) downloadBtn.style.display = 'none';
+            
+            // Update every 2 seconds
+            updateContinuousForecast();
+            continuousForecastInterval = setInterval(updateContinuousForecast, 2000);
+        }
+        
+        function stopContinuousForecast() {
+            isForecastRunning = false;
+            if (continuousForecastInterval) {
+                clearInterval(continuousForecastInterval);
+                continuousForecastInterval = null;
+            }
+            
+            // Finalize monitoring session
+            monitoringData.endTime = new Date().toISOString();
+            monitoringData.events.push({
+                timestamp: new Date().toISOString(),
+                event: 'monitoring_stopped',
+                totalDataPoints: monitoringData.dataPoints.length
+            });
+            
+            // Calculate summary
+            if (monitoringData.dataPoints.length > 0) {
+                const values = monitoringData.dataPoints.map(d => d.concentration);
+                monitoringData.summary = {
+                    duration: Math.round((new Date(monitoringData.endTime) - new Date(monitoringData.startTime)) / 1000),
+                    totalDataPoints: values.length,
+                    avgConcentration: values.reduce((a, b) => a + b, 0) / values.length,
+                    maxConcentration: Math.max(...values),
+                    minConcentration: Math.min(...values),
+                    threshold: monitoringData.dataPoints[0]?.threshold || 0,
+                    exceedances: values.filter(v => v > (monitoringData.dataPoints[0]?.threshold || 0)).length
+                };
+            }
+            
+            document.getElementById('startForecastBtn').disabled = false;
+            document.getElementById('startForecastBtn').textContent = '▶️ Start Monitoring';
+            document.getElementById('stopForecastBtn').disabled = true;
+            
+            // Show download button
+            showDownloadMonitoringButton();
+        }
+        
+        function restartContinuousForecast() {
+            if (isForecastRunning) {
+                stopContinuousForecast();
+                setTimeout(startContinuousForecast, 500);
+            }
+        }
+        
+        async function updateContinuousForecast() {
+            try {
+                const response = await fetch('/api/continuous_forecast', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        gas_name: document.getElementById('forecastGas').value
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Store monitoring data
+                if (isForecastRunning) {
+                    monitoringData.dataPoints.push({
+                        timestamp: new Date().toISOString(),
+                        concentration: data.current_value,
+                        threshold: data.threshold,
+                        exceedsThreshold: data.current_value > data.threshold,
+                        avg: data.avg,
+                        max: data.max,
+                        min: data.min
+                    });
+                    
+                    // Log threshold exceedances
+                    if (data.current_value > data.threshold) {
+                        monitoringData.events.push({
+                            timestamp: new Date().toISOString(),
+                            event: 'threshold_exceeded',
+                            concentration: data.current_value,
+                            threshold: data.threshold,
+                            exceedance: data.current_value - data.threshold
+                        });
+                    }
+                }
+                
+                // Update chart
+                const timePoints = Array.from({length: data.forecast_data.length}, (_, i) => i);
+                
+                Plotly.newPlot('forecastChart', [{
+                    x: timePoints,
+                    y: data.forecast_data,
+                    mode: 'lines+markers',
+                    name: 'Concentration',
+                    line: {color: '#3b82f6', width: 3},
+                    marker: {size: 4}
+                }], {
+                    title: `${data.gas_name} - Real-time Monitoring`,
+                    xaxis: {title: 'Time Point'},
+                    yaxis: {title: 'Concentration (ppm)'},
+                    shapes: [{
+                        type: 'line',
+                        x0: 0,
+                        x1: timePoints.length - 1,
+                        y0: data.threshold,
+                        y1: data.threshold,
+                        line: {color: 'orange', width: 2, dash: 'dot'}
+                    }],
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: {color: '#e2e8f0'}
+                });
+                
+                document.getElementById('forecastMetrics').innerHTML = `
+                    <div class="metric-card">
+                        <div class="metric-label">Current Value</div>
+                        <div class="metric-value">${data.current_value.toFixed(1)} ppm</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Average</div>
+                        <div class="metric-value">${data.avg.toFixed(1)} ppm</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Maximum</div>
+                        <div class="metric-value">${data.max.toFixed(1)} ppm</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Exceedances</div>
+                        <div class="metric-value">${data.exceedances}</div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Forecast error:', error);
+                monitoringData.events.push({
+                    timestamp: new Date().toISOString(),
+                    event: 'error',
+                    error: error.message
+                });
+            }
+        }
+        
+        function showDownloadMonitoringButton() {
+            // Remove existing button if any
+            const existingBtn = document.getElementById('downloadMonitoringBtn');
+            if (existingBtn) existingBtn.remove();
+            
+            // Create download button
+            const downloadBtn = document.createElement('button');
+            downloadBtn.id = 'downloadMonitoringBtn';
+            downloadBtn.innerHTML = '📥 Download Monitoring Report';
+            downloadBtn.style.cssText = `
+                background: #10b981; 
+                color: white; 
+                padding: 12px 24px; 
+                border: none; 
+                border-radius: 8px; 
+                font-size: 1em; 
+                cursor: pointer; 
+                margin: 10px 0;
+                display: block;
+                width: 100%;
+            `;
+            downloadBtn.onclick = downloadMonitoringReport;
+            
+            // Add button after stop button
+            const stopBtn = document.getElementById('stopForecastBtn');
+            stopBtn.parentNode.parentNode.appendChild(downloadBtn);
+        }
+        
+        function downloadMonitoringReport() {
+            if (!monitoringData.sessionId) {
+                alert('No monitoring session data available');
+                return;
+            }
+            
+            // Generate comprehensive monitoring report
+            const report = {
+                session_info: {
+                    session_id: monitoringData.sessionId,
+                    gas_monitored: monitoringData.gasName,
+                    start_time: monitoringData.startTime,
+                    end_time: monitoringData.endTime,
+                    duration_seconds: monitoringData.summary.duration
+                },
+                summary: monitoringData.summary,
+                data_points: monitoringData.dataPoints,
+                events: monitoringData.events,
+                analysis: {
+                    data_quality: {
+                        total_points: monitoringData.dataPoints.length,
+                        sampling_rate: '2 seconds',
+                        completeness: '100%'
+                    },
+                    safety_assessment: {
+                        threshold_exceedances: monitoringData.summary.exceedances,
+                        exceedance_rate: ((monitoringData.summary.exceedances / monitoringData.summary.totalDataPoints) * 100).toFixed(2) + '%',
+                        max_exceedance: monitoringData.summary.maxConcentration > monitoringData.summary.threshold ? 
+                                       (monitoringData.summary.maxConcentration - monitoringData.summary.threshold).toFixed(2) : 0,
+                        risk_level: monitoringData.summary.exceedances > 0 ? 'HIGH' : 
+                                   monitoringData.summary.avgConcentration > monitoringData.summary.threshold * 0.8 ? 'MEDIUM' : 'LOW'
+                    },
+                    recommendations: generateMonitoringRecommendations()
+                },
+                export_info: {
+                    generated_at: new Date().toISOString(),
+                    format: 'JSON',
+                    version: '1.0'
+                }
+            };
+            
+            // Download as JSON
+            const dataStr = JSON.stringify(report, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `monitoring_report_${monitoringData.gasName}_${monitoringData.sessionId}.json`;
+            link.click();
+            
+            // Also generate CSV for data points
+            downloadMonitoringCSV();
+            
+            alert('Monitoring report downloaded successfully!\nGenerated: JSON report + CSV data file');
+        }
+        
+        function downloadMonitoringCSV() {
+            if (monitoringData.dataPoints.length === 0) return;
+            
+            // Create CSV content
+            let csvContent = 'Timestamp,Concentration (ppm),Threshold (ppm),Exceeds Threshold,Average,Maximum,Minimum\n';
+            
+            monitoringData.dataPoints.forEach(point => {
+                csvContent += `${point.timestamp},${point.concentration},${point.threshold},${point.exceedsThreshold},${point.avg},${point.max},${point.min}\n`;
+            });
+            
+            // Download CSV
+            const csvBlob = new Blob([csvContent], {type: 'text/csv'});
+            const url = URL.createObjectURL(csvBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `monitoring_data_${monitoringData.gasName}_${monitoringData.sessionId}.csv`;
+            link.click();
+        }
+        
+        function generateMonitoringRecommendations() {
+            const recommendations = [];
+            
+            if (monitoringData.summary.exceedances > 0) {
+                recommendations.push('⚠️ Threshold exceedances detected - implement immediate safety measures');
+                recommendations.push('🔍 Investigate source of elevated concentrations');
+            }
+            
+            if (monitoringData.summary.avgConcentration > monitoringData.summary.threshold * 0.8) {
+                recommendations.push('📈 Average concentration approaching threshold - increase monitoring frequency');
+            }
+            
+            if (monitoringData.summary.totalDataPoints < 10) {
+                recommendations.push('⏱️ Short monitoring duration - consider longer sessions for better analysis');
+            }
+            
+            if (recommendations.length === 0) {
+                recommendations.push('✅ Monitoring session completed successfully with no safety concerns');
+                recommendations.push('📊 Continue regular monitoring as per safety protocols');
+            }
+            
+            return recommendations;
+        }
+                        x0: 0,
+                        x1: timePoints[timePoints.length - 1],
+                        y0: data.threshold,
+                        y1: data.threshold,
+                        line: {color: 'red', width: 2, dash: 'dash'}
+                    }],
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: {color: '#e2e8f0'}
+                });
+                
+                // Update metrics
+                const status = data.current_value > data.threshold ? '🔴 DANGER' : 
+                             data.current_value > data.threshold * 0.8 ? '🟠 WARNING' : '🟢 SAFE';
+                
+                document.getElementById('forecastMetrics').innerHTML = `
+                    <div class="metric-card">
+                        <div class="metric-label">Current Value</div>
+                        <div class="metric-value">${data.current_value.toFixed(1)} ppm</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Status</div>
+                        <div class="metric-value" style="font-size: 1.5em;">${status}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Average</div>
+                        <div class="metric-value">${data.avg.toFixed(1)} ppm</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Exceedances</div>
+                        <div class="metric-value">${data.exceedances}/${data.forecast_data.length}</div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Continuous forecast error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
