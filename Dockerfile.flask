@@ -25,5 +25,5 @@ EXPOSE 5001
 ENV PYTHONUNBUFFERED=1
 ENV TF_CPP_MIN_LOG_LEVEL=2
 
-# Run application
-CMD ["python", "run_app.py"]
+# Run FastAPI application with uvicorn
+CMD ["uvicorn", "app_fastapi:app", "--host", "0.0.0.0", "--port", "5001", "--workers", "1"]

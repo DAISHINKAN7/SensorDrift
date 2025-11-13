@@ -29,6 +29,17 @@
 ### Dataset Reference
 > Vergara, A. (2012). Gas Sensor Array Drift Dataset [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C5RP6W
 
+### 🎉 What's New in v2.0
+**SensorDrift has been upgraded to FastAPI with a stunning modern UI!**
+- ⚡ **4x Performance Boost**: FastAPI with async/await support
+- 🎨 **Glassmorphism Design**: Modern, beautiful UI with animations
+- 📊 **10+ Advanced Charts**: Plotly, Chart.js, 3D visualizations
+- 📡 **Real-time Monitoring**: Live data streaming and updates
+- 📚 **Auto API Docs**: Interactive Swagger UI at `/api/docs`
+- 🌐 **5 Dashboard Tabs**: Detection, Analytics, Comparison, Monitoring, 3D
+
+👉 **See [FASTAPI_UPGRADE.md](FASTAPI_UPGRADE.md) for complete details!**
+
 ---
 
 ## 🎯 Quick Start
@@ -51,7 +62,8 @@
 
 | Service | URL | Purpose |
 |---------|-----|---------|
-| **Flask Dashboard** | http://localhost:5001 | Main UI |
+| **FastAPI Dashboard** 🆕 | http://localhost:5001 | Modern UI & ML Predictions |
+| **FastAPI Docs** 🆕 | http://localhost:5001/api/docs | Interactive API Documentation |
 | **Apache Airflow** | http://localhost:8080 | Pipeline Orchestration |
 | **Grafana** | http://localhost:3000 | Real-time Dashboards |
 | **Metabase** | http://localhost:3001 | Business Analytics |
@@ -84,7 +96,7 @@
                        ▼
 ┌─────────────────────────────────────────────────────────┐
 │          ANALYTICS LAYER (Visualization)                 │
-│  Flask | Grafana | Metabase | Jupyter Lab               │
+│  FastAPI | Grafana | Metabase | Jupyter Lab             │
 └─────────────────────────────────────────────────────────┘
 ```
 
