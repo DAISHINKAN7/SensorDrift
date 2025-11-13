@@ -1,0 +1,26 @@
+# Airflow is already in base image
+# Additional packages for Airflow
+
+# Database
+psycopg2-binary==2.9.9
+SQLAlchemy==2.0.23
+
+# Data Processing
+pandas==2.1.3
+numpy==1.26.2
+
+# Machine Learning
+tensorflow==2.15.0
+scikit-learn==1.3.2
+
+# Message Queue
+kafka-python==2.0.2
+
+# Data Quality
+great-expectations==0.18.4
+
+# Cloud Storage
+boto3==1.29.7
+
+# Utilities
+requests==2.31.0

@@ -1,0 +1,38 @@
+# Web Framework
+Flask==3.0.0
+flask-cors==4.0.0
+
+# Database
+psycopg2-binary==2.9.9
+SQLAlchemy==2.0.23
+redis==5.0.1
+
+# Data Processing
+pandas==2.1.3
+numpy==1.26.2
+
+# Machine Learning
+tensorflow==2.15.0
+scikit-learn==1.3.2
+
+# Visualization
+matplotlib==3.8.2
+seaborn==0.13.0
+plotly==5.18.0
+
+# Report Generation
+reportlab==4.0.7
+
+# Message Queue
+kafka-python==2.0.2
+
+# Data Quality
+great-expectations==0.18.4
+
+# Utilities
+python-dotenv==1.0.0
+requests==2.31.0
+boto3==1.29.7
+
+# API
+openapi-spec-validator==0.7.1
