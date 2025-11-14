@@ -95,7 +95,7 @@ sleep 60
 # Check service health
 echo -e "${BLUE}🏥 Checking service health...${NC}"
 
-services=("postgres:5432" "redis:6379" "kafka:9092" "minio:9000" "flask-app:5001" "grafana:3000" "airflow-webserver:8080" "jupyter:8888" "metabase:3001")
+services=("postgres:5432" "redis:6379" "kafka:9092" "minio:9000" "flask-app:5001" "grafana:3000" "airflow-webserver:8081" "jupyter:8888" "metabase:3001")
 service_names=("PostgreSQL" "Redis" "Kafka" "MinIO" "Flask App" "Grafana" "Airflow" "Jupyter Lab" "Metabase")
 
 for i in "${!services[@]}"; do
@@ -120,7 +120,7 @@ echo -e "${NC}"
 
 echo -e "${GREEN}📊 Access URLs:${NC}"
 echo -e "  ${BLUE}Flask Dashboard:${NC}     http://localhost:5001"
-echo -e "  ${BLUE}Apache Airflow:${NC}      http://localhost:8080  (admin/admin)"
+echo -e "  ${BLUE}Apache Airflow:${NC}      http://localhost:8081  (admin/admin)"
 echo -e "  ${BLUE}Grafana:${NC}             http://localhost:3000  (admin/admin)"
 echo -e "  ${BLUE}Metabase:${NC}            http://localhost:3001"
 echo -e "  ${BLUE}Jupyter Lab:${NC}         http://localhost:8888"
@@ -135,7 +135,7 @@ echo -e "  ${BLUE}Kafka:${NC}               localhost:9092"
 echo ""
 echo -e "${YELLOW}📝 Quick Start Guide:${NC}"
 echo -e "  1. Open Flask Dashboard: http://localhost:5001"
-echo -e "  2. View Airflow DAGs: http://localhost:8080"
+echo -e "  2. View Airflow DAGs: http://localhost:8081"
 echo -e "  3. Check Data Quality in Grafana: http://localhost:3000"
 echo -e "  4. Run EDA in Jupyter Lab: http://localhost:8888"
 
@@ -166,17 +166,17 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS
         open http://localhost:5001 2>/dev/null || true
-        open http://localhost:8080 2>/dev/null || true
+        open http://localhost:8081 2>/dev/null || true
         open http://localhost:3000 2>/dev/null || true
     elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
         # Linux
         xdg-open http://localhost:5001 2>/dev/null || true
-        xdg-open http://localhost:8080 2>/dev/null || true
+        xdg-open http://localhost:8081 2>/dev/null || true
         xdg-open http://localhost:3000 2>/dev/null || true
     elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "cygwin" ]]; then
         # Windows
         start http://localhost:5001 2>/dev/null || true
-        start http://localhost:8080 2>/dev/null || true
+        start http://localhost:8081 2>/dev/null || true
         start http://localhost:3000 2>/dev/null || true
     fi
 fi
